@@ -1,0 +1,59 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title></title>
+
+    <script src="http://localhost:11111/Scripts/jquery-1.8.2.min.js"></script>
+    <script src="http://localhost:11111/Scripts/jquery.signalR-2.2.0.min.js"></script>
+    <script src="http://localhost:11111/push/im/hubs"></script>
+    <script>
+    function Chat(groupId) {
+        $.connection.hub.url = 'http://localhost:11111/push/im';
+        var proxy = $.connection.chatHub;
+        proxy.client.clientOnConnectedCallBack = function (result) {
+            $(result).each(function (i, item) {
+                receive(item);
+            })
+        };
+
+        proxy.client.hubMessage = function (result) {
+            console.log(result);
+            receive(result);
+        };
+        var receive = function (result) { $('#ol_chat_message').append('<li>' + result.body.name + '【' + result.connectionid + '】 在' + result.addtime + ' 说：' + result.body.message + '</li>'); }
+        $.connection.hub.start({ jsonp: true })
+            .done(function () {
+                proxy.server.groupToConnection(groupId);
+                console.log('链接成功哦');
+            }).fail(function () {
+                console.log("连接失败......");
+            });
+
+        $('#btn_send_message').on("click", function () {
+            var obj = {
+                BaseMessageType: 1,
+                MessageDetail: {
+                    Name: $('#txtName').val(),
+                    Content: $("#txtMessage").val()
+                }
+            };
+            proxy.server.sendToGroup(groupId, obj);
+        });
+    }
+    $(function () {
+        Chat(100002);
+    });
+    </script>
+   
+</head>
+<body>
+    <h3>欢迎进入盘子聊天室（demo）:</h3>
+    <ol class="round" id="ol_chat_message"></ol>
+
+    <input type="text" id="txtName" />
+    <input type="text" id="txtMessage" />
+    <input type="button" id="btn_send_message" value="发送" />
+
+</body>
+</html>
