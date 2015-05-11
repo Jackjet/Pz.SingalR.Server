@@ -30,12 +30,12 @@
                 console.log("连接失败......");
             });
 
-        $('#btn_send_message').on("click", function () {
+       $('#btn_send_message').on("click", function () {
             var obj = {
-                BaseMessageType: 1,
-                MessageDetail: {
-                    Name: $('#txtName').val(),
-                    Content: $("#txtMessage").val()
+                messagetype: 1,
+                body: {
+                    name: $('#txtName').val(),
+                    message: $("#txtMessage").val()
                 }
             };
             proxy.server.sendToGroup(groupId, obj);
