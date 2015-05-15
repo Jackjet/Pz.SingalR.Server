@@ -36,6 +36,8 @@ namespace Pz.ChatServer.Core
         /// 当前用户连接ID
         /// </summary>
         public string CurrentConnectionId { get; set; }
+        [JsonProperty("userid")]
+        public string CurrentUserId { get; set; }
         [JsonProperty("messagetype")]
         public MessageType BaseMessageType { get; set; }
         [JsonProperty("addtime")]
@@ -88,14 +90,17 @@ namespace Pz.ChatServer.Core
 
     public class OnlineUser
     {
+        [JsonProperty("group_id")]
         /// <summary>
         /// 用户客户端组ID
         /// </summary>
         public string groupName { get; set; }
+        [JsonProperty("connection_id")]
         /// <summary>
         /// 连接用户ID
         /// </summary>
         public string connectionId { get; set; }
+        [JsonProperty("client_userid")]
         /// <summary>
         /// 用户客户端ID
         /// </summary>

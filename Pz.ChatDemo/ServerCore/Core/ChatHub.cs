@@ -7,6 +7,7 @@ using System.Web;
 
 namespace Pz.ChatServer.Core
 {
+    
     public class ChatHub : Hub  
     {
         public string CurretnGroupName { get; set; }
@@ -37,12 +38,12 @@ namespace Pz.ChatServer.Core
         }
 
         #region 服务端自动调用 显示连接状态
-        private BaseMessage getSysMsg(string message, string title = "系统消息")
+        private BaseMessage getSysMsg(string message,string userId="", string title = "系统消息")
         {
             var returnMsg = new BaseMessage
             {
                 CurrentConnectionId = CurrentGroupUserConnectionId,
-                BaseMessageType = MessageType.MessageTypeSystem
+                BaseMessageType = MessageType.MessageTypeSystem, CurrentUserId = userId
             };
             returnMsg.MessageDetail = new SystemMessage { SysMessage = message, SysName = title };
             return returnMsg;
@@ -85,7 +86,7 @@ namespace Pz.ChatServer.Core
         /// </summary>
         /// <param name="connectionId"></param>
         /// <param name="message"></param>
-        public void SendToClient(string connectionId, ChatMessage message)
+        public void SendToClient(string connectionId, BaseMessage message)
         {
             Clients.Client(connectionId).hubMessage(message);
         }
@@ -95,7 +96,7 @@ namespace Pz.ChatServer.Core
         /// </summary>
         /// <param name="connectionIds"></param>
         /// <param name="message"></param>
-        public void SendToClients(IList<string> connectionIds, ChatMessage message)
+        private void SendToClients(IList<string> connectionIds, BaseMessage message)
         {
             Clients.Clients(connectionIds).hubMessage(message);
         }
@@ -104,7 +105,7 @@ namespace Pz.ChatServer.Core
         /// </summary>
         /// <param name="connectionIds">string形式 connectionId0|connectionId1|connectionId2</param>
         /// <param name="message"></param>
-        public void SendToClients(string connectionIds, ChatMessage message)
+        public void SendToClients(string connectionIds, BaseMessage message)
         {
             if (string.IsNullOrEmpty(connectionIds)) { return; }
             SendToClients(connectionIds.Split('|').ToList(), message);
@@ -129,16 +130,15 @@ namespace Pz.ChatServer.Core
         /// </summary>
         /// <param name="groupId"></param>
         /// <param name="cvnumber"></param>
-        public virtual void GroupToConnection(string groupName)
+        public virtual void GroupToConnection(string groupName,string userId="")
         {
             //当前组
             CurretnGroupName = groupName;
             //添加到当前组
             Groups.Add(CurrentGroupUserConnectionId, groupName);
             //添加在线人数（demo，可以是数据库或者其他缓存方式等）
-            AddOnlineUser(groupName);
-
-            ClientOnConnectedCallBack(getSysMsg(string.Format("新用户{0}加入当前组{1},当前本组用户数：{2}", CurrentGroupUserConnectionId, groupName, GroupOnLineUserCount)));
+            AddOnlineUser(groupName,userId);
+            ClientOnConnectedCallBack(getSysMsg(string.Format("新用户{0}加入当前组{1},当前本组用户数：{2}", CurrentGroupUserConnectionId, groupName, GroupOnLineUserCount), userId));
            
         }
 
@@ -148,12 +148,7 @@ namespace Pz.ChatServer.Core
         /// <param name="groupName"></param>
         public virtual void GetAllUsersByGroup(string groupName)
         {
-            //SendToGroup(groupName, new BaseMessage
-            //{
-            //    Content = string.Format("当前用户数为：{0}人",GroupOnLineUserCount),
-            //    CurrentConnectionId = CurrentGroupUserConnectionId,
-            //    Name = "系统功能：查询用户数据"
-            //});
+          Clients.Group(groupName).getAllUsers(ChatHub.OnLineUser.Where(x => x.groupName == groupName).ToList());
         }
         #endregion
 
@@ -171,17 +166,24 @@ namespace Pz.ChatServer.Core
         #endregion
 
         #region 私有方法
-        private void AddOnlineUser(string groupName)
+        private void AddOnlineUser(string groupName,string userId)
         {
             if (ChatHub.OnLineUser == null) { ChatHub.OnLineUser = new List<OnlineUser>(); }
-            ChatHub.OnLineUser.Add(new OnlineUser
+            //如果当前用户ID已经加入，则不加
+            if (!ChatHub.OnLineUser.Any(x => x.clientUserId == userId))
             {
-                clientUserId = CurrentGroupUserConnectionId,
-                connectionId = CurrentGroupUserConnectionId,
-                groupName = groupName
-            });
+                ChatHub.OnLineUser.Add(new OnlineUser
+                {
+                    clientUserId = userId,
+                    connectionId = CurrentGroupUserConnectionId,
+                    groupName = groupName
+                });
+            }
         }
-
+        private void AddOnlineUser(string groupName)
+        {
+            AddOnlineUser(groupName, "");
+        }
         /// <summary>
         /// 更新当前用户 可重写 未实验
         /// </summary>
