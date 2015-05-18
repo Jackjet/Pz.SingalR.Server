@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNet.SignalR;
+using Pz.ChatServer.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,8 +9,34 @@ using System.Web;
 namespace Pz.ChatServer.Core
 {
     
-    public class ChatHub : Hub  
+    public class ChatHub : Hub
     {
+        private Anaylize _anaylize;
+        private Anaylize Anaylize
+        {
+            get
+            {
+                if (_anaylize == null)
+                {
+                    _anaylize = new Anaylize(ChatHub.OnLineUser);
+                }
+                return _anaylize;
+            }
+
+        }
+
+        private AnaylizeUnRead _anaylizeUnRead;
+        private AnaylizeUnRead anaylizeUnRead
+        {
+            get
+            {
+                if (_anaylizeUnRead == null)
+                {
+                    _anaylizeUnRead = new AnaylizeUnRead();
+                }
+                return _anaylizeUnRead;
+            }
+        }
         public string CurretnGroupName { get; set; }
         /// <summary>
         /// 当前连接用户的ConnectionId
@@ -45,7 +72,7 @@ namespace Pz.ChatServer.Core
                 CurrentConnectionId = CurrentGroupUserConnectionId,
                 BaseMessageType = MessageType.MessageTypeSystem, CurrentUserId = userId
             };
-            returnMsg.MessageDetail = new SystemMessage { SysMessage = message, SysName = title };
+            returnMsg.MessageDetail = new SystemMessage { SysMessage = message+" 当前在线："+ Anaylize.GetAllOnlineUserCount(), SysName = title };
             return returnMsg;
         }
         /// <summary>
@@ -121,6 +148,10 @@ namespace Pz.ChatServer.Core
         public void SendToGroup(string groupName, BaseMessage message)
         {
             message.CurrentConnectionId = Context.ConnectionId;
+            
+            //未读流程，添加未读数据
+            anaylizeUnRead.AddUserToGroupMsg(message.BaseMessageType, groupName);
+            
             Clients.Group(groupName).hubMessage(message);
         }
         #region 创建会话连接
@@ -161,24 +192,26 @@ namespace Pz.ChatServer.Core
         /// <param name="message"></param>
         public void ClientOnConnectedCallBack(BaseMessage message)
         {
-            Clients.Caller.clientOnConnectedCallBack(message);
+            //Clients.Caller.clientOnConnectedCallBack(message);
+            Clients.All.clientOnConnectedCallBack(message);
         }
         #endregion
 
         #region 私有方法
-        private void AddOnlineUser(string groupName,string userId)
+        private void AddOnlineUser(string groupName, string userId)
         {
             if (ChatHub.OnLineUser == null) { ChatHub.OnLineUser = new List<OnlineUser>(); }
             //如果当前用户ID已经加入，则不加
-            if (!ChatHub.OnLineUser.Any(x => x.clientUserId == userId))
+            if (ChatHub.OnLineUser.Any(x => x.clientUserId ==userId && x.groupName ==groupName))
             {
-                ChatHub.OnLineUser.Add(new OnlineUser
-                {
-                    clientUserId = userId,
-                    connectionId = CurrentGroupUserConnectionId,
-                    groupName = groupName
-                });
+                ChatHub.OnLineUser.Remove(ChatHub.OnLineUser.First(x => x.clientUserId == userId && x.groupName == groupName));
             }
+            ChatHub.OnLineUser.Add(new OnlineUser
+            {
+                clientUserId = userId,
+                connectionId = CurrentGroupUserConnectionId,
+                groupName = groupName
+            });
         }
         private void AddOnlineUser(string groupName)
         {
