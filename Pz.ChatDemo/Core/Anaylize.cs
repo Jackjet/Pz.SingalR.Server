@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
-using Pz.ChatServer.Model;
+using Macrosage.Model;
 
-namespace Pz.ChatServer.Core
+namespace Macrosage.BLL.Core
 {
     public class Anaylize :IAnaylizeOnlineUser<OnlineUser>
     {

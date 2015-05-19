@@ -4,8 +4,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Pz.ChatServer.Core
+/*解析在线用户接口 T为在线用户实体
+ *获取在线用户数量，获取在线用户信息等
+ *创建时间：2015-5-18
+ *创建人：fyp 
+ */
+namespace Macrosage.BLL.Core
 {
+   
    public interface IAnaylizeOnlineUser<T> where T:class,new()
     {
        void setOnlineUser(IList<T> onlineUser);
